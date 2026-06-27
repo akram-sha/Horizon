@@ -1,0 +1,27 @@
+# Gradle
+.gradle/
+build/
+*.jar
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ONNX model — too large for git, must be generated locally
+app/src/main/resources/finbert.onnx
+
+# AWS credentials
+.aws/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+HorizonML/.venv/
+
+# LocalStack data
+.localstack/
+
+*.md
