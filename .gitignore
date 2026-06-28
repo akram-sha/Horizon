@@ -9,9 +9,6 @@ build/
 *.iws
 *.ipr
 
-# ONNX model — too large for git, must be generated locally
-app/src/main/resources/finbert.onnx
-
 # AWS credentials
 .aws/
 
@@ -23,13 +20,8 @@ __pycache__/
 # LocalStack data
 .localstack/
 
-# AWS CLI dist (accidentally committed previously)
+# AWS CLI dist
 aws/
-
-# Python
-__pycache__/
-*.pyc
-.venv/
 
 # ONNX model — too large for git, must be generated locally
 *.onnx
