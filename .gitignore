@@ -2,6 +2,7 @@
 .gradle/
 build/
 *.jar
+!gradle/wrapper/gradle-wrapper.jar  # this one must be committed
 
 # IntelliJ
 .idea/

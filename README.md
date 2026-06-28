@@ -419,7 +419,7 @@ If you want to pick this up, `SentimentML.kt` is the file to work in. The `compu
 ## Architecture (where this is heading)
 
 ```
-Quartr API
+Quartr API (another news API is better since Quartr API is an expensive B2B product)
     │
     ▼
 POST /ingest  (API Gateway)
