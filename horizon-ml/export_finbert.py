@@ -153,6 +153,7 @@ torch.onnx.export(
     do_constant_folding = True,
 )
 print(f"\nExported → {FINBERT_ONNX_PATH}")
+tokenizer.save_pretrained(".")
 
 # Verify the ONNX model.
 onnx_model = onnx.load(FINBERT_ONNX_PATH)
