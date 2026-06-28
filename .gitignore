@@ -19,10 +19,23 @@ app/src/main/resources/finbert.onnx
 __pycache__/
 *.pyc
 .venv/
-HorizonML/.venv/
 
 # LocalStack data
 .localstack/
 
-*.md
+# AWS CLI dist (accidentally committed previously)
 aws/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# ONNX model — too large for git, must be generated locally
+*.onnx
+*.onnx.data
+
+# Secrets
+.env
+
+*.md
