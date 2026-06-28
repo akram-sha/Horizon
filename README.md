@@ -6,6 +6,15 @@ The stack is Kotlin on the JVM for the pipeline, Python for the ML model export,
 
 ---
 
+## Datsets
+
+| Dataset                               | Link |
+|---------------------------------------|--|
+| Sentiment Analysis for Financial News | https://www.kaggle.com/datasets/ankurzing/sentiment-analysis-for-financial-news |
+| Financial News with Ticker-Level Sentiment | https://www.kaggle.com/datasets/rdolphin/financial-news-with-ticker-level-sentiment?resource=download |
+
+---
+
 ## What's built so far
 
 | Component | Status | Notes |
@@ -410,7 +419,7 @@ If you want to pick this up, `SentimentML.kt` is the file to work in. The `compu
 ## Architecture (where this is heading)
 
 ```
-Quartr API
+Quartr API (another news API is better since Quartr API is an expensive B2B product)
     │
     ▼
 POST /ingest  (API Gateway)
