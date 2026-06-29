@@ -21,11 +21,11 @@ data class Insight(
 @Serializable
 data class PolygonArticle(
     val title:        String,
-    val author:       String? = null,
-    val tickers:      List<String> = emptyList(),
+    val author:       String?       = null,
+    val tickers:      List<String>  = emptyList(),
     val insights:     List<Insight> = emptyList(),
-    val publisher:    Publisher? = null,
-    val description:  String? = null,
+    val publisher:    Publisher?    = null,
+    val description:  String?       = null,
     @SerialName("published_utc")
     val publishedUtc: String,
 )

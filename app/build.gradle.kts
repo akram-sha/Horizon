@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.shadow)
     application
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 }

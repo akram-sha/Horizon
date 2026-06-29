@@ -1,32 +1,43 @@
 package org.horizon.model
 
 import org.horizon.dto.PolygonArticle
-import org.horizon.storage.DynamoWriter
 import java.nio.file.Paths
 import java.nio.LongBuffer
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import ai.onnxruntime.OnnxTensor
+import org.slf4j.LoggerFactory
 
-object SentimentML {
+object SentimentML : SentimentScorer {
+
+    private val logger = LoggerFactory.getLogger(SentimentML::class.java)
 
     private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
 
-    private val session: OrtSession by lazy {
-        val modelUrl = SentimentML::class.java.getResource("/finbert.onnx") ?: error("finbert.onnx not found on classpath")
-        val modelPath = Paths.get(modelUrl.toURI()).toString()
-        env.createSession(modelPath, OrtSession.SessionOptions())
+    private val sessionDelegate = lazy {
+        val modelUrl = SentimentML::class.java.getResource("/finbert.onnx")
+            ?: error("finbert.onnx not found on classpath")
+        env.createSession(Paths.get(modelUrl.toURI()).toString(), OrtSession.SessionOptions())
     }
+    private val session: OrtSession by sessionDelegate
 
-    private val tokenizer: HuggingFaceTokenizer by lazy {
+    private val tokenizerDelegate = lazy {
         val classpathUrl = SentimentML::class.java.getResource("/tokenizer.json")
         if (classpathUrl != null) {
             HuggingFaceTokenizer.newInstance(Paths.get(classpathUrl.toURI()))
         } else {
-            // fallback for local dev without resources copy
             HuggingFaceTokenizer.newInstance(Paths.get("horizon-ml/tokenizer.json"))
         }
+    }
+    private val tokenizer: HuggingFaceTokenizer by tokenizerDelegate
+
+    init {
+        Runtime.getRuntime().addShutdownHook(Thread {
+            if (sessionDelegate.isInitialized()) try { session.close() } catch (_: Exception) {}
+            if (tokenizerDelegate.isInitialized()) try { tokenizer.close() } catch (_: Exception) {}
+            try { env.close() } catch (_: Exception) {}
+        })
     }
 
     private fun runInference(text: String): Double {
@@ -40,21 +51,23 @@ object SentimentML {
         val attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(attentionMask), longArrayOf(1, seqLen))
         val tokenTypeIdsTensor  = OnnxTensor.createTensor(env, LongBuffer.wrap(tokenTypeIds),  longArrayOf(1, seqLen))
 
-        val logits = session.run(mapOf(
-            "input_ids"      to inputIdsTensor,
-            "attention_mask" to attentionMaskTensor,
-            "token_type_ids" to tokenTypeIdsTensor,
-        )).use { result ->
-            @Suppress("UNCHECKED_CAST")
-            (result[0].value as Array<FloatArray>)[0]
+        try {
+            val logits = session.run(mapOf(
+                "input_ids"      to inputIdsTensor,
+                "attention_mask" to attentionMaskTensor,
+                "token_type_ids" to tokenTypeIdsTensor,
+            )).use { result ->
+                @Suppress("UNCHECKED_CAST")
+                (result[0].value as Array<FloatArray>)[0]
+            }
+
+            val probs = softmax(logits)   // [positive, negative, neutral]
+            return (probs[0] - probs[1]).toDouble()
+        } finally {
+            inputIdsTensor.close()
+            attentionMaskTensor.close()
+            tokenTypeIdsTensor.close()
         }
-
-        inputIdsTensor.close()
-        attentionMaskTensor.close()
-        tokenTypeIdsTensor.close()
-
-        val probs = softmax(logits)   // [positive, negative, neutral]
-        return (probs[0] - probs[1]).toDouble()
     }
 
     private fun softmax(logits: FloatArray): FloatArray {
@@ -64,47 +77,9 @@ object SentimentML {
         return FloatArray(logits.size) { i -> (exp[i] / sum).toFloat() }
     }
 
-    fun computePolarity(article: PolygonArticle): Double {
+    override fun computePolarity(article: PolygonArticle): Double {
         val text = listOfNotNull(article.title, article.description).joinToString(" ")
         if (text.isBlank()) return 0.0
         return runInference(text)
-    }
-
-    fun writeLeaderboard(articles: List<PolygonArticle>) {
-        println("ONNX session inputs: ${session.inputNames}")
-        println("Tokenizer ready: ${tokenizer.encode("test").ids.size} tokens")
-        println("Test inference: ${runInference("Earnings per share beat expectations significantly.")}")
-
-        val tickerScores = mutableMapOf<String, MutableList<Double>>()
-
-        for (article in articles) {
-            for (ticker in article.tickers) {
-                val polarity = computePolarity(article)
-                tickerScores.getOrPut(ticker) { mutableListOf() }.add(polarity)
-            }
-        }
-
-        val green = "\u001B[32m"
-        val red   = "\u001B[31m"
-        val reset = "\u001B[0m"
-
-        println("––– Top 10 Tickers by Sentiment Polarity –––")
-        tickerScores
-            .filter { (_, scores) -> scores.size >= 5 }
-            .mapValues { (_, scores) -> scores.average() }
-            .entries
-            .sortedByDescending { it.value }
-            .take(10)
-            .forEach { (ticker, score) ->
-                val bar   = if (score > 0) "▲" else "▼"
-                val color = if (score > 0) green else red
-                println("  $color$bar $ticker: ${"%.3f".format(score)}$reset")
-                DynamoWriter.writePolarityScore(
-                    ticker        = ticker,
-                    timestamp     = java.time.Instant.now().toString(),
-                    polarityScore = score,
-                    articleCount  = tickerScores[ticker]?.size ?: 0
-                )
-            }
     }
 }
