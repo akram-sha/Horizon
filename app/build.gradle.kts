@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.shadow)
-    application
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 }
 
@@ -23,8 +22,20 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-application {
-    mainClass = "org.horizon.AppKt"
+// Replaces the application plugin's run task. Dropping the application plugin avoids
+// ShadowApplicationPlugin being auto-applied, which breaks on Gradle 9 (reads the
+// removed ApplicationPluginConvention.mainClassName via the convention system).
+tasks.register<JavaExec>("run") {
+    group       = "application"
+    description = "Runs this project as a JVM application"
+    mainClass.set("org.horizon.AppKt")
+    classpath    = sourceSets["main"].runtimeClasspath
+}
+
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    manifest {
+        attributes["Main-Class"] = "org.horizon.AppKt"
+    }
 }
 
 tasks.named<Test>("test") {
