@@ -20,9 +20,13 @@ object SentimentML {
     }
 
     private val tokenizer: HuggingFaceTokenizer by lazy {
-        val tokenizerUrl = SentimentML::class.java.getResource("/tokenizer.json") ?: error("tokenizer.json not found on classpath")
-        val tokenizerPath = Paths.get(tokenizerUrl.toURI())
-        HuggingFaceTokenizer.newInstance(tokenizerPath)
+        val classpathUrl = SentimentML::class.java.getResource("/tokenizer.json")
+        if (classpathUrl != null) {
+            HuggingFaceTokenizer.newInstance(Paths.get(classpathUrl.toURI()))
+        } else {
+            // fallback for local dev without resources copy
+            HuggingFaceTokenizer.newInstance(Paths.get("horizon-ml/tokenizer.json"))
+        }
     }
 
     private fun runInference(text: String): Double {
@@ -49,7 +53,7 @@ object SentimentML {
         attentionMaskTensor.close()
         tokenTypeIdsTensor.close()
 
-        val probs = softmax(logits)   // [negative, neutral, positive]
+        val probs = softmax(logits)   // [positive, negative, neutral]
         return (probs[0] - probs[1]).toDouble()
     }
 
