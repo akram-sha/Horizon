@@ -1,3 +1,4 @@
+accelerate==1.14.0
 annotated-doc==0.0.4
 anyio==4.14.1
 certifi==2026.6.17
@@ -47,6 +48,7 @@ packaging==26.2
 pandas==3.0.3
 pandas-stubs==3.0.3.260530
 protobuf==7.35.1
+psutil==7.2.2
 Pygments==2.20.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
