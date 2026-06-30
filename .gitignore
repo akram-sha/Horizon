@@ -31,3 +31,8 @@ aws/
 # Secrets
 .env
 misc/
+
+horizon-ml/tokenizer.json
+horizon-ml/tokenizer_config.json
+app/src/main/resources/tokenizer.json
+app/src/main/resources/tokenizer_config.json

@@ -21,7 +21,7 @@ The stack is Kotlin on the JVM for the pipeline, Python for the ML model export,
 |---|---|---|
 | Kotlin project structure | ✅ Done | `dto/`, `model/`, `storage/`, `handler/`, `App.kt` |
 | `DTOs.kt` | ✅ Done | `PolygonArticle`, `Insight`, `Publisher` |
-| `SentimentML.kt` | ✅ Done | Placeholder polarity logic — to be replaced with ONNX in Phase 2B |
+| `SentimentML.kt` | ✅ Done | Real FinBERT ONNX inference — polarity = P(pos) − P(neg) |
 | `DynamoWriter.kt` | ✅ Done | Writes ticker, timestamp, polarity score, article count, TTL |
 | `LambdaHandler.kt` | ✅ Done | Empty stub — Phase 2C |
 | Polygon news dataset | ✅ Done | 5,548 articles in `resources/polygon_news.json` |
@@ -30,8 +30,9 @@ The stack is Kotlin on the JVM for the pipeline, Python for the ML model export,
 | DynamoDB table | ✅ Done | `horizon-sentiment`, PK=`ticker`, SK=`timestamp` |
 | End-to-end local run | ✅ Done | Articles → polarity → DynamoDB write |
 | FinBERT ONNX export | ✅ Done | `export_finbert.py`, 88.94% accuracy, opset 18 |
-| `finbert.onnx` | ⚠️ Local only | Not committed (400MB+) — generate it yourself (see below) |
-| ONNX inference in Kotlin | ⬜ Next | Phase 2B — replace placeholder with real FinBERT forward pass |
+| `finbert.onnx` | ⚠️ Local only | Not committed (400MB+) — generate via `setup.sh` (see below) |
+| ONNX inference in Kotlin | ✅ Done | Phase 2B complete — real FinBERT forward pass, continuous scores in `[−1.0, +1.0]` |
+| Sentence splitting + confidence threshold | ⬜ Next | Phase 2B remaining — split article text before inference, discard low-confidence sentences |
 | `LambdaHandler.kt` impl | ⬜ Todo | Phase 2C |
 | Fat JAR + Lambda deploy | ⬜ Todo | Phase 2D |
 | SQS + API Gateway | ⬜ Todo | Phase 2E |
@@ -369,10 +370,14 @@ The whole thing takes 5–10 minutes depending on your connection.
 
 ### Copy it into the project
 
+Run `setup.sh` from the repo root — it copies the model and tokenizer files into resources in one step:
+
 ```bash
-cp finbert.onnx ../app/src/main/resources/finbert.onnx
 cd ..
+bash setup.sh
 ```
+
+If any source file is missing (e.g. you haven't run `export_finbert.py` yet), the script will tell you exactly which file is missing before it tries to copy anything.
 
 ---
 
@@ -404,15 +409,14 @@ python export_finbert.py
 
 ---
 
-## What's next (Phase 2B)
+## What's next (Phase 2B remaining)
 
-The current `SentimentML.kt` fakes polarity by counting sentiment labels from the Polygon dataset. Phase 2B replaces this with a real FinBERT forward pass:
+The core FinBERT inference pipeline is complete. The remaining Phase 2B work improves accuracy:
 
-- Add `onnxruntime` and DJL tokenizers to `build.gradle.kts`
-- Load `finbert.onnx` from the classpath via `OrtEnvironment`
-- Tokenize each article, run it through the model, apply softmax, compute `P(pos) − P(neg)`
+- **Sentence splitting** — FinBERT was trained on short financial sentences, not multi-sentence paragraphs. Splitting article text before inference and averaging per-sentence scores significantly improves signal quality.
+- **Confidence threshold** — discard sentences where the model's max class probability is below 0.65, so low-certainty predictions don't drag the average.
 
-If you want to pick this up, `SentimentML.kt` is the file to work in. The `computePolarity()` function is where the ONNX forward pass goes.
+After that, Phase 2C wires up `LambdaHandler.kt` to consume SQS events and feed the full pipeline end-to-end.
 
 ---
 
