@@ -18,9 +18,9 @@ object DynamoWriter : PolarityStore {
     private const val TTL_SECONDS = 48 * 60 * 60L
 
     private val client: DynamoDbClient = run {
-        val endpoint = System.getenv("DYNAMODB_ENDPOINT")
-        val region   = Region.of(System.getenv("AWS_REGION") ?: "us-east-1")
-        val builder  = DynamoDbClient.builder().region(region)
+        val endpoint  = System.getenv("DYNAMODB_ENDPOINT")
+        val region    = Region.of(System.getenv("AWS_REGION") ?: "us-east-1")
+        val builder   = DynamoDbClient.builder().region(region)
         if (endpoint != null) {
             builder
                 .endpointOverride(URI.create(endpoint))
@@ -39,12 +39,7 @@ object DynamoWriter : PolarityStore {
         Runtime.getRuntime().addShutdownHook(Thread { client.close() })
     }
 
-    override fun writePolarityScore(
-        ticker: String,
-        timestamp: String,
-        score: Double,
-        articleCount: Int
-    ) {
+    override fun writePolarityScore(ticker: String, timestamp: String, score: Double, articleCount: Int,) {
         val item = mapOf(
             "ticker"         to AttributeValue.builder().s(ticker).build(),
             "timestamp"      to AttributeValue.builder().s(timestamp).build(),
