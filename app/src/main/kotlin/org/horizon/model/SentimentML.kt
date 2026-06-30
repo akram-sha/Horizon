@@ -8,6 +8,7 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import ai.onnxruntime.OnnxTensor
 import org.slf4j.LoggerFactory
+import kotlin.math.exp
 
 object SentimentML : SentimentScorer {
 
@@ -72,7 +73,7 @@ object SentimentML : SentimentScorer {
 
     private fun softmax(logits: FloatArray): FloatArray {
         val max = logits.max()
-        val exp = logits.map { Math.exp((it - max).toDouble()) }
+        val exp = logits.map { exp((it - max).toDouble()) }
         val sum = exp.sum()
         return FloatArray(logits.size) { i -> (exp[i] / sum).toFloat() }
     }

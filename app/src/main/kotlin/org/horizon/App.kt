@@ -26,11 +26,7 @@ fun main() {
     runLeaderboard(articles, scorer = SentimentML, store = DynamoWriter)
 }
 
-fun runLeaderboard(
-    articles: List<PolygonArticle>,
-    scorer: SentimentScorer,
-    store: PolarityStore,
-) {
+fun runLeaderboard(articles: List<PolygonArticle>, scorer: SentimentScorer, store: PolarityStore,) {
     val tickerScores = mutableMapOf<String, MutableList<Double>>()
 
     for (article in articles) {
