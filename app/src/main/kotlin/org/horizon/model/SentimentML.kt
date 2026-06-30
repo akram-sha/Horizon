@@ -25,11 +25,8 @@ object SentimentML : SentimentScorer {
 
     private val tokenizerDelegate = lazy {
         val classpathUrl = SentimentML::class.java.getResource("/tokenizer.json")
-        if (classpathUrl != null) {
-            HuggingFaceTokenizer.newInstance(Paths.get(classpathUrl.toURI()))
-        } else {
-            HuggingFaceTokenizer.newInstance(Paths.get("horizon-ml/tokenizer.json"))
-        }
+            ?: error("tokenizer.json not found on classpath — run bash setup.sh first")
+        HuggingFaceTokenizer.newInstance(Paths.get(classpathUrl.toURI()))
     }
     private val tokenizer: HuggingFaceTokenizer by tokenizerDelegate
 
@@ -80,7 +77,7 @@ object SentimentML : SentimentScorer {
 
     override fun computePolarity(article: PolygonArticle): Double {
         val text = listOfNotNull(article.title, article.description).joinToString(" ")
-        if (text.isBlank()) return 0.0
+        if (text.isBlank() || text.none { it.isLetterOrDigit() }) return 0.0
         return runInference(text)
     }
 }
