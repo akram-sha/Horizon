@@ -23,6 +23,7 @@ data class PolygonArticle(
     val title:        String,
     val author:       String?       = null,
     val tickers:      List<String>  = emptyList(),
+    // Polygon's own sentiment labels — intentionally unused; SentimentML computes an independent signal via FinBERT
     val insights:     List<Insight> = emptyList(),
     val publisher:    Publisher?    = null,
     val description:  String?       = null,
